@@ -1,0 +1,9 @@
+{
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "out": true,
+    "node_modules": true,
+    "coverage": true
+  },
+  "go.testFlags": ["-count=1"]
+}

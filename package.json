@@ -1,0 +1,19 @@
+{
+  "name": "zenithdtl",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Go reputation-weighted DTL settlement simulator with TypeScript integration tests.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs && node --experimental-strip-types --test \"tests/node/*.test.ts\"",
+    "ci": "node scripts/build.mjs && go test ./... && go vet ./... && node --experimental-strip-types --test \"tests/node/*.test.ts\"",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
