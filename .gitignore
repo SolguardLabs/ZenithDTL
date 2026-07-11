@@ -1,8 +1,8 @@
 /out/
 /node_modules/
 /coverage/
-zenithdtl
-zenithdtl.exe
+/zenithdtl
+/zenithdtl.exe
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
