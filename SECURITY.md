@@ -1,50 +1,40 @@
-# Seguridad
+# Política de seguridad
 
-ZenithDTL modela un protocolo de liquidacion local donde operadores reciben
-capacidad segun reputacion, stake y rendimiento reciente. La superficie de
-revision se centra en accounting, rutas, ventanas de epoch, withdrawals y
-controles de admision.
+## Límites de confianza
 
-## Modelo
+ZenithDTL recibe instrucciones de un entorno operacional externo. La CLI local no autentica usuarios, no firma transacciones y no demuestra finalización en una red. Su alcance verificable son las transiciones del ledger, la política de rutas, la capacidad de canales, las colas de retirada y los reportes reproducibles. Una integración real debe aportar autenticación, idempotencia, custodia y conciliación independiente.
 
-- Las obligaciones se abren contra una ruta registrada y un asset unico.
-- La ruta debe conectar origen y destino, respetar limite de hops y no superar
-  la politica de fees.
-- Cada canal mantiene limite, uso, reservas e importe en vuelo.
-- La reputacion del operador se expresa como score de 0 a 1000 y banda publica.
-- Los withdrawals de boveda usan una cola con epoch de espera antes del pago.
-
-## Invariantes Esperadas
-
-- Ningun canal debe reportar deuda activa por encima de su limite.
-- Las rutas deben usar canales activos y operadores habilitados.
-- Las obligaciones cerradas deben liberar o consumir la reserva correspondiente.
-- Los withdrawals solo deben pagarse cuando esten listos.
-- El reporte publico debe conservar balances no negativos y una traza auditable.
-
-## Validacion Automatizada
-
-Los tests TypeScript cubren:
-
-- contrato del CLI y reportes JSON;
-- reputacion y asignacion de capacidad;
-- consumo visible de limites;
-- penalizaciones de rendimiento;
-- validacion de rutas y withdrawals.
-
-Ejecutar:
-
-```bash
-bash scripts/ci.sh
+```mermaid
+flowchart TD
+    I[Instrucción autorizada] --> R[Política de ruta]
+    R --> O[Operador y canal]
+    O --> L[Reserva contable]
+    L --> S[Settlement / cancelación]
+    S --> J[Diario]
+    J --> A[Reporte de capacidad y riesgo]
+    A --> V[Revisión operacional]
 ```
 
-## Dependencias
+## Controles comprobables
 
-El nucleo Go no usa dependencias externas. Node solo se usa para scripts y
-tests de integracion. Dependabot cubre `gomod`, `npm` y GitHub Actions.
+- Los IDs de ruta y canal enlazan dominios compatibles y activos registrados.
+- Una obligación registra bruto, fee y asignaciones de cada canal; la cuenta pagadora conserva la reserva hasta el estado terminal.
+- La admisión local exige canal habilitado y disponibilidad para el importe de su salto.
+- Las scorecards usan un score de 0 a 1000 con ajustes por época y bandas visibles.
+- Los retiros de bóveda se mantienen en cola hasta cumplir el plazo configurado.
+- Los reportes separan límite planificado, recomendado y asignado, exposición y capacidad disponible; `validate` revisa conservación y consistencia estructural.
 
-## Reportes Internos
+La conservación contable y los límites por canal son controles acotados. No sustituyen una auditoría de seguridad independiente ni prueban que todas las obligaciones futuras puedan ser cubiertas externamente.
 
-Los hallazgos deben incluir escenario, comando reproducible, impacto economico,
-componentes afectados y propuesta de mitigacion. No incluir datos privados ni
-credenciales en issues, logs o fixtures.
+## Comunicación responsable
+
+Use el canal privado de avisos de seguridad del repositorio. Incluya commit, comando, escenario, secuencia de épocas, IDs de operador/ruta/canal, unidades, estado esperado y observado e impacto económico estimado. No envíe secretos ni pruebe sobre sistemas ajenos.
+
+```bash
+go test ./...
+go vet ./...
+npm run ci
+out/zenithdtl validate capacity-limits
+```
+
+El [modelo económico](docs/modelo-economico.md) define unidades y exposición; [operación](docs/operacion.md) describe los controles de seguimiento.

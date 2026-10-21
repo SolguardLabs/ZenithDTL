@@ -1,9 +1,9 @@
 {
   "name": "zenithdtl",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Go reputation-weighted DTL settlement simulator with TypeScript integration tests.",
+  "description": "Servicio de liquidación por operadores, reputación y capacidad de canales.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node scripts/build.mjs && node --experimental-strip-types --test tests/node/*.test.ts",
