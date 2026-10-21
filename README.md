@@ -1,73 +1,64 @@
 # ZenithDTL
 
-![banner](./assets/banner.png)
+![ZenithDTL — Solguard Labs](assets/banner.png)
 
-ZenithDTL es un simulador Go de liquidacion DTL basado en reputacion de
-operadores. El protocolo asigna capacidad de settlement segun score historico,
-stake operativo, estado del operador y canales activos entre dominios.
+ZenithDTL es un motor de liquidación entre dominios con operadores, canales y rutas de uno o varios saltos. La capacidad operativa se distribuye por época a partir de stake, reputación, estado del operador y demanda de canales. El núcleo Go conserva balances, reservas y obligaciones; una CLI produce informes JSON deterministas para conciliación y supervisión.
 
-El repositorio modela un entorno local de auditoria con CLI, reportes JSON,
-tests TypeScript y escenarios reproducibles.
+## Flujo económico
 
-## Componentes
-
-- `src/ledger.go`: cuentas, bovedas, reservas, creditos y withdrawals.
-- `src/reputation.go`: scorecards, ventanas de rendimiento y ajustes diferidos.
-- `src/operators.go`: operadores, canales y distribucion de capacidad.
-- `src/routes.go`: rutas multi-hop, fees y validacion de conectividad.
-- `src/settlement.go`: apertura, liquidacion, expiracion y cancelacion de obligaciones.
-- `src/epoch.go`: cierre de epoch, planificacion y refresco de limites.
-- `cmd/zenithdtl`: CLI para escenarios y validacion.
-
-## Requisitos
-
-- Go 1.22 o superior.
-- Node.js 22 o superior para los tests TypeScript.
-- Bash para ejecutar los scripts de CI local.
-
-## Uso
-
-```bash
-node scripts/build.mjs
-./out/zenithdtl list
-./out/zenithdtl run balanced-reputation --json
-./out/zenithdtl validate route-withdrawal
+```mermaid
+flowchart LR
+    C[Cliente y saldo] --> I[Intent de pago]
+    I --> R[Ruta registrada]
+    R --> O[Operadores]
+    O --> K[Canales y capacidad]
+    K --> B[Obligación reservada]
+    B --> S[Settlement o expiración]
+    S --> L[Ledger y fees]
+    L --> V[Validación y reporte]
+    P[Score, stake y política] --> K
 ```
 
-En Windows el binario se genera como `out/zenithdtl.exe`.
-
-## Tests
-
-```bash
-bash scripts/tests.sh
-```
-
-El comando compila el binario Go, ejecuta `go test ./...` y lanza los tests
-TypeScript con `node --experimental-strip-types --test`.
-
-## Escenarios
-
-- `balanced-reputation`: liquidacion con operadores de bandas distintas.
-- `capacity-limits`: admision de obligaciones contra canales hot y warm.
-- `penalty-cycle`: ventanas de settlement expiradas y score operativo ajustado.
-- `route-withdrawal`: rutas multi-hop con ciclo completo de withdrawals.
-
-## Estructura
+Cada obligación reserva el bruto (`importe + fee`) del pagador y una cantidad por canal. Al liquidarse, se acredita el importe al beneficiario y se distribuyen fees por salto. Las obligaciones canceladas o expiradas liberan las reservas de cuenta y canal. El cambio de época incorpora señales de reputación y publica un plan de capacidad.
 
 ```text
-.
-├── cmd/zenithdtl
-├── src/
-├── tests/
-├── scripts/
-├── .github/
-├── .vscode/
-├── go.mod
-├── package.json
-├── README.md
-└── SECURITY.md
+capacidad de canal disponible = max(límite − usado − reservado − en_vuelo, 0)
+deuda activa = reservado + en_vuelo
+headroom asignado = max(límite agregado − exposición abierta, 0)
+utilización (bps) = exposición abierta × 10 000 / límite agregado
 ```
 
-## Estado
+`capacity` en el reporte reúne por operador score, banda, plan, recomendación, límite asignado, exposición abierta y headroom de canales. Son vistas de seguimiento; una recomendación no es una transferencia liquidada. Consulte el [modelo económico](docs/modelo-economico.md) para los cálculos y ejemplos.
 
-Proyecto de laboratorio local. No requiere servicios externos ni credenciales.
+## Primer uso
+
+Requisitos: Go 1.22+, Node.js 24+.
+
+```bash
+npm ci
+npm run build
+out/zenithdtl list
+out/zenithdtl run balanced-reputation --json
+out/zenithdtl validate route-withdrawal
+npm test
+```
+
+En Windows el binario es `out/zenithdtl.exe`; puede usarse `npm.cmd` si PowerShell bloquea el alias de npm. El comando `list` enumera escenarios deterministas; `run` genera un reporte estructurado y `validate` comprueba conservación, rutas y referencias.
+
+## Estructura y documentación
+
+| Área | Responsabilidad |
+| --- | --- |
+| `src/ledger.go`, `src/settlement.go` | Cuentas, reservas, obligaciones y fees. |
+| `src/reputation.go`, `src/operators.go` | Scorecards, planes y límites de canales. |
+| `src/routes.go`, `src/withdrawals.go` | Conectividad, precios de ruta y colas de retirada. |
+| `src/capacity_digest.go`, `src/report.go` | Conciliación de capacidad y salida JSON. |
+| `cmd/zenithdtl` | Interfaz de línea de comandos. |
+
+- [Arquitectura y ciclo de época](docs/arquitectura.md)
+- [Modelo económico](docs/modelo-economico.md)
+- [Operación y recuperación](docs/operacion.md)
+- [Contrato de reporte](docs/contrato-json.md)
+- [Política de seguridad](SECURITY.md)
+
+La integración local no conecta custodios ni ejecuta contratos externos. `scripts/ci.sh` valida formato Go, build, pruebas Go, `go vet` y pruebas TypeScript. La entrega estable exige que `main`, `production` y el tag anotado `v1.0.0` apunten al mismo commit.

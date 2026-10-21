@@ -70,6 +70,7 @@ type Report struct {
 	Accounts    []AccountBalance    `json:"accounts"`
 	Vaults      []Vault             `json:"vaults"`
 	Operators   []OperatorReport    `json:"operators"`
+	Capacity    []CapacityDigest    `json:"capacity"`
 	Channels    []ChannelReport     `json:"channels"`
 	Routes      []RouteReport       `json:"routes"`
 	Obligations []Obligation        `json:"obligations"`
@@ -110,6 +111,7 @@ func BuildReport(p *Protocol, scenario string, includeEvents bool) Report {
 		Accounts:    p.Ledger.AccountRows(),
 		Vaults:      p.Ledger.VaultRows(),
 		Operators:   operators,
+		Capacity:    BuildCapacityDigest(p),
 		Channels:    channels,
 		Routes:      routes,
 		Obligations: p.Settlements.Rows(),

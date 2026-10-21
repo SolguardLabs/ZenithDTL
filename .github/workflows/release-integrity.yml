@@ -1,0 +1,32 @@
+name: release-integrity
+
+on:
+  push:
+    branches: [production]
+    tags: ['v*']
+  release:
+    types: [published]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Verify production pointers and documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --force origin main production --tags
+          main=$(git rev-parse origin/main)
+          production=$(git rev-parse origin/production)
+          tagged=$(git rev-parse 'refs/tags/v1.0.0^{}')
+          test "$main" = "$production"
+          test "$main" = "$tagged"
+          test "$(git cat-file -t refs/tags/v1.0.0)" = tag
+          test -s assets/banner.png
+          test -s README.md
+          test -s SECURITY.md
+          test -s docs/modelo-economico.md
+          test -s docs/operacion.md
